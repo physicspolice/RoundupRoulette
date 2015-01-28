@@ -22,32 +22,47 @@ var data = [
 
 var options = {
 	'legend': { 'position': 'nw' },
-	'series': { 'stack': true },
 	'xaxes': [ { 'tickDecimals': 0, 'tickSize': 1 } ],
 	'yaxes': [ { 'min': 0 }, { 'alignTicksWithAxis': 1, 'position': 'right' } ]
 };
 
+// Loaded asynchronously.
+var library = [];
+
 $(document).ready(function()
 {
-	$('button').click(function(e)
-	{
-		e.preventDefault();
-		var code = $('input').val();
-		if(!code.length)
-			code = codes[Math.floor(Math.random() * codes.length)];
-		$.ajax({
-			'url': 'data/' + code + '.json',
-			'type': 'GET',
-			'dataType': 'json',
-			'success': function(series)
+	$.ajax({
+		'url': 'library.json',
+		'type': 'GET',
+		'dataType': 'json',
+		'success': function(response)
+		{
+			library = response;
+			$('button').click(function(e)
 			{
-				series['bars'] = { 'show': true }
-				data.push(series);
-				$('span').text('R = ' + series['rval'] + ', p <= ' + series['pval']);
-				$.plot('#graph', data, options);
-			}
-		});
+				e.preventDefault();
+				var code = $('input').val();
+				if(code in library)
+					code = library[code];
+				else
+					code = library[Math.floor(Math.random() * library.length)];
+				$.ajax({
+					'url': 'data/' + code['code'] + '.json',
+					'type': 'GET',
+					'dataType': 'json',
+					'success': function(series)
+					{
+						data[1] = {
+							'data': series,
+							'label': code['code'] + ' - ' + code['label'],
+							'bars': { 'show': true }
+						};
+						$('span').text('R = ' + code['rval'] + ', p <= ' + code['pval']);
+						$.plot('#graph', data, options);
+					}
+				});
+			});
+			$('button').click();
+		}
 	});
-
-	$('button').click();
 });

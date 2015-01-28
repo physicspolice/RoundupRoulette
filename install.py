@@ -52,19 +52,35 @@ datasets = {
 
 icd9 = {}
 
+def console(message, polling=False):
+	message = '  ' + message
+	if polling:
+		# Print on the same line.
+		print(message, end='\r')
+		stdout.flush()
+		console.length = len(message)
+	else:
+		# Print normal line.
+		if console.length > len(message):
+			message += ' ' * (console.length - len(message))
+		print(message)
+		console.length = 0
+console.length = 0
+
 name = 'cache/icd9.csv'
 if not exists(name):
-	print('  Downloading %s' % name)
+	console('Downloading %s' % name)
 	response = urlopen(codes)
 	with open(name, 'w') as cache:
 		cache.write(response.read())
 	response.close()
-print('  Parsing %s' % name)
+console('Parsing %s' % name, polling=True)
 with open(name) as file:
 	csv = reader(file)
 	csv.next() # Skip header row.
 	for row in csv:
 		icd9[row[0].replace('.', '')] = row[1]
+console('Parsed %s' % name)
 
 data = {}
 totals = {}
@@ -72,8 +88,7 @@ totals = {}
 for year, url in datasets.iteritems():
 	name = 'cache/ndhs-%s.txt' % year
 	if not exists(name):
-		print('  Downloading %s' % name, end='\r')
-		stdout.flush()
+		console('Downloading %s' % name, polling=True)
 		response = urlopen(url)
 		if url.endswith('.zip'):
 			zip = ZipFile(StringIO(response.read()))
@@ -83,18 +98,16 @@ for year, url in datasets.iteritems():
 			for line in response:
 				count += 1
 				if count % 1000 == 0:
-					print('  Downloading %s (%d)' % (name, count), end='\r')
-					stdout.flush()
+					console('Downloading %s (%d)' % (name, count), polling=True)
 				cache.write(line)
-		print('  Downloaded %s            ' % name)
+		console('Downloaded %s' % name)
 		response.close()
 	with open(name) as cache:
 		count = 0
 		for line in cache:
 			count += 1
 			if count % 1000 == 0:
-				print('  Processing %s (%d)' % (name, count), end='\r')
-				stdout.flush()
+				console('Processing %s (%d)' % (name, count), polling=True)
 			for i in range(28, 62, 5):
 				code = line[i - 1:i + 4].strip(' -')
 				if not code:
@@ -105,16 +118,16 @@ for year, url in datasets.iteritems():
 					data[code][year] = 0 # Initialize year.
 				data[code][year] += 1 # Increment.
 		totals[year] = count / 100000.0 # Per one hundred thousand.
-		print('  Processed %s          ' % name)
+		console('Processed %s' % name)
 
 count = 0
 num = len(data)
+library = []
 for code, years in data.iteritems():
 	name = 'data/%s.json' % code
 	count += 1
 	if count % 10 == 0:
-		print('  Saving (%d of %d) %s     ' % (count, num, name), end='\r')
-		stdout.flush()
+		console('Searching ICD-9 codes (%d of %d) ' % (count, num), polling=True)
 	graph = []
 	glyphosate_d = []
 	graph_d = []
@@ -130,14 +143,18 @@ for code, years in data.iteritems():
 		continue # Unimpressive R-value.
 	if p_value > 0.05:
 		continue # Unimpressive P-value.
-	label = code
-	if code in icd9:
-		label = '%s - %s'% (code, icd9[code])
-	with open(name, 'wb') as file:
-		file.write(dumps({
-			'label': label,
-			'data': graph,
-			'rval': r_value,
-			'pval': p_value,
-		}))
-print('  Saved %d code files                 ' % num)
+	library.append({
+		'code': code,
+		'label': icd9.get(code, 'N/A'),
+		'rval': r_value,
+		'pval': p_value,
+	})
+	with open(name, 'w') as file:
+		file.write(dumps(graph))
+console('Searched %d ICD-9 codes' % num)
+
+name = 'library.json'
+console('Saving %s' % name, polling=True)
+with open(name, 'w') as file:
+	file.write(dumps(library))
+console('Saved %d codes to %s' % (len(library), name))
