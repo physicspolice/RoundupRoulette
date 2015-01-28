@@ -39,7 +39,6 @@ $(document).ready(function()
 		{
 			library = response;
 			// TODO make top-10 lists for causes & cures
-			// TODO check anchor tag to load code
 			// TODO support open graph with automatically generated preview image
 			// TODO add favicon
 			$('button').click(function(e)
@@ -49,16 +48,16 @@ $(document).ready(function()
 				var code = $('input').val();
 				if(!code)
 					code = window.location.hash.substring(1);
-				for(i in library)
-				{
-					if(library[i]['code'] == code)
-					{
-						diagnosis == library[i];
-						break;
-					}
-				}
+				if(code)
+					for(i in library)
+						if(library[i]['code'] == code)
+						{
+							diagnosis == library[i];
+							break;
+						}
 				if(!diagnosis)
 					diagnosis = library[Math.floor(Math.random() * library.length)];
+				window.location.hash = diagnosis['code'];
 				$.ajax({
 					'url': 'data/' + diagnosis['code'] + '.json',
 					'type': 'GET',
