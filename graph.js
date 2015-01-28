@@ -41,23 +41,20 @@ $(document).ready(function()
 			// TODO make top-10 lists for causes & cures
 			// TODO support open graph with automatically generated preview image
 			// TODO add favicon
-			$('button').click(function(e)
+			$(window).on('hashchange', function()
 			{
-				e.preventDefault();
 				var diagnosis = false;
-				var code = $('input').val();
+				var code = location.hash.substring(1);
 				if(!code)
-					code = window.location.hash.substring(1);
-				if(code)
-					for(i in library)
-						if(library[i]['code'] == code)
-						{
-							diagnosis == library[i];
-							break;
-						}
+					return $('button').click();
+				for(i in library)
+					if(library[i]['code'] == code)
+					{
+						diagnosis = library[i];
+						break;
+					}
 				if(!diagnosis)
-					diagnosis = library[Math.floor(Math.random() * library.length)];
-				window.location.hash = diagnosis['code'];
+					return $('button').click();
 				$.ajax({
 					'url': 'data/' + diagnosis['code'] + '.json',
 					'type': 'GET',
@@ -69,12 +66,23 @@ $(document).ready(function()
 							'label': diagnosis['code'] + ' - ' + diagnosis['label'],
 							'bars': { 'show': true }
 						};
+						var verb = (diagnosis['rval'] > 0) ? 'causes' : 'cures';
+						$('h3').text('Did you know? Glyphosate ' + verb + ' ' + diagnosis['label'].toLowerCase() + '!');
 						$('span').text('R = ' + diagnosis['rval'] + ', p <= ' + diagnosis['pval']);
 						$.plot('#graph', data, options);
 					}
 				});
 			});
-			$('button').click();
+			$('button').click(function(e)
+			{
+				e.preventDefault();
+				diagnosis = library[Math.floor(Math.random() * library.length)];
+				location.hash = diagnosis['code'];
+			});
+			if(!location.hash.substring(1))
+				$('button').click();
+			else
+				$(window).trigger('hashchange');
 		}
 	});
 });
