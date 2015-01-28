@@ -38,6 +38,7 @@ $(document).ready(function()
 		'success': function(response)
 		{
 			library = response;
+			// TODO make top-10 lists for causes & cures
 			$('button').click(function(e)
 			{
 				e.preventDefault();

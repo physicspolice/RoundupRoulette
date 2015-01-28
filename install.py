@@ -6,7 +6,6 @@ from zipfile import ZipFile
 from scipy import stats
 from json import dumps
 from sys import stdout
-from csv import reader
 
 # TODO: Handle ICD-9 code changes over time.
 
@@ -29,7 +28,7 @@ glyphosate = {
 	2010: 16725, # Interpolated.
 }
 
-codes = 'https://raw.githubusercontent.com/freemed/freemed/master/data/multum/hcfa_icd_9.csv'
+codes = 'https://www.section111.cms.hhs.gov/MRA/help/ICD9_DX_Codes.txt'
 
 # See: ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Dataset_Documentation/NHDS/
 datasets = {
@@ -50,8 +49,6 @@ datasets = {
 	2010: 'ftp://ftp.cdc.gov/pub/Health_Statistics/NCHS/Datasets/NHDS/nhds10/NHDS10.PU.txt',
 }
 
-icd9 = {}
-
 def console(message, polling=False):
 	message = '  ' + message
 	if polling:
@@ -67,6 +64,7 @@ def console(message, polling=False):
 		console.length = 0
 console.length = 0
 
+icd9 = {}
 name = 'cache/icd9.csv'
 if not exists(name):
 	console('Downloading %s' % name)
@@ -76,15 +74,12 @@ if not exists(name):
 	response.close()
 console('Parsing %s' % name, polling=True)
 with open(name) as file:
-	csv = reader(file)
-	csv.next() # Skip header row.
-	for row in csv:
-		icd9[row[0].replace('.', '')] = row[1]
+	for line in file:
+		icd9[line[:5].strip()] = line[89:].strip()
 console('Parsed %s' % name)
 
 data = {}
 totals = {}
-
 for year, url in datasets.iteritems():
 	name = 'cache/ndhs-%s.txt' % year
 	if not exists(name):
