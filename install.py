@@ -75,7 +75,10 @@ if not exists(name):
 console('Parsing %s' % name, polling=True)
 with open(name) as file:
 	for line in file:
-		icd9[line[:5].strip()] = line[89:].strip()
+		label = line[89:].strip()
+		if label.endswith(' Y'):
+			label = label[:-1].strip()
+		icd9[line[:5].strip()] = label
 console('Parsed %s' % name)
 
 data = {}

@@ -39,26 +39,38 @@ $(document).ready(function()
 		{
 			library = response;
 			// TODO make top-10 lists for causes & cures
+			// TODO check anchor tag to load code
+			// TODO support open graph with automatically generated preview image
+			// TODO add favicon
 			$('button').click(function(e)
 			{
 				e.preventDefault();
+				var diagnosis = false;
 				var code = $('input').val();
-				if(code in library)
-					code = library[code];
-				else
-					code = library[Math.floor(Math.random() * library.length)];
+				if(!code)
+					code = window.location.hash.substring(1);
+				for(i in library)
+				{
+					if(library[i]['code'] == code)
+					{
+						diagnosis == library[i];
+						break;
+					}
+				}
+				if(!diagnosis)
+					diagnosis = library[Math.floor(Math.random() * library.length)];
 				$.ajax({
-					'url': 'data/' + code['code'] + '.json',
+					'url': 'data/' + diagnosis['code'] + '.json',
 					'type': 'GET',
 					'dataType': 'json',
 					'success': function(series)
 					{
 						data[1] = {
 							'data': series,
-							'label': code['code'] + ' - ' + code['label'],
+							'label': diagnosis['code'] + ' - ' + diagnosis['label'],
 							'bars': { 'show': true }
 						};
-						$('span').text('R = ' + code['rval'] + ', p <= ' + code['pval']);
+						$('span').text('R = ' + diagnosis['rval'] + ', p <= ' + diagnosis['pval']);
 						$.plot('#graph', data, options);
 					}
 				});
